@@ -50,7 +50,7 @@ humble
 ```
 src/ground/carla_nn_car_following/          # ROS 2 ament_python 功能包
 ├── main.py                                 # 统一入口：check / scene / collect / train / run / eval
-├── check_env.py                            # 环境自检（Python、CARLA、雷达、ROS 2 共六项）
+├── check_env.py                            # 环境自检（6 项检查，汇总为 4 行结论）
 ├── diagnose_drive.py                       # 诊断工具：逐个出生点试验"车能不能开动"
 ├── main.sh / main.bat                      # 一键入口（仓库约定：入口为 main.*）
 ├── package.xml / setup.py / setup.cfg
@@ -350,7 +350,7 @@ python3 check_env.py --host 192.168.148.1 --town Town03
 
 **截图**：`07_env_check_pass.png`。
 
-![环境自检四项 PASS](../img/ground/carla_nn_car_following/07_env_check_pass.png)
+![环境自检 4 行结论全部 PASS](../img/ground/carla_nn_car_following/07_env_check_pass.png)
 
 ---
 
@@ -552,7 +552,7 @@ cat data/eval_classic.csv
 | `acc_scene_node.py` | `on_timer()` | ROS 2 主循环：场景推进、控制器切换、发布状态 | — |
 | `analyze_dataset.py` | 逐工况体检 | 按"偏差 = 真值 − 雷达"的均值/标准差判断数据质量 | 6.3 节判据 |
 | `diagnose_drive.py` | 逐出生点试车 | 每个出生点全油门试跑 5 秒，挑出能行驶的点 | — |
-| `check_env.py` | 六项环境自检 | Python、carla 包、连接、自车、传感器、rclpy | — |
+| `check_env.py` | 环境自检（6 项） | Python、carla 包、连接、自车、传感器、rclpy | — |
 
 ---
 

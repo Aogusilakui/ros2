@@ -330,6 +330,10 @@ ros2 pkg executables carla_nn_car_following
 **预期输出**：`Summary: 1 package finished`，并列出 `carla_nn_car_following acc_scene_node`。
 **截图**：`06_colcon_build.png`。
 
+> **评审本 PR 时**：模块尚未合并进 `OpenHUTB/ros2` 的 master，请改为克隆 PR 所在分支
+> （例如 `git clone -b master https://github.com/Aogusilakui/ros2.git`），或在 PR 页面
+> 用「Code → Download ZIP」下载对应提交的源码。
+
 ![colcon 编译成功](../img/ground/carla_nn_car_following/06_colcon_build.png)
 
 ### 4.6 环境自检

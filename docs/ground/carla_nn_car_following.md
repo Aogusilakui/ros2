@@ -372,17 +372,17 @@ python3 test/test_nn_numpy.py           # 预期：[结果] 17 项全部通过
 python3 main.py --mode scene --host 192.168.148.1 --scenario decelerate
 ```
 
-**预期输出**：
+**预期输出**（完整逐帧日志见 [run_classic.log](../evidence/carla_nn_car_following/run_classic.log)）：
 
 ```
 [预检] 出生点 #0 可用（30 帧位移 5.3 m，末速 8.52 m/s），已重新就位
 [自车] 已生成 @ (-6.4, -79.1, 0.3)
 [前车] 已生成 @ (-6.1, -54.0, -0.0)，初始车距 25.0 m
-[工况] decelerate —— 前车缓慢减速（-1.5 m/s^2）（经典 ACC，设定车速 16.7 m/s）
+[工况] decelerate —— 前车缓慢减速（-1.5 m/s^2）（经典 ACC，设定车速 18.7 m/s）
 [起始] 自车与前车初始速度设为 16.7 m/s（60 km/h），进入稳态跟车
-  t=  0.0s  雷达= 15.22m  真值= 24.92m  v_rel=+0.00 m/s  自车=16.73 m/s  前车=15.99 m/s  油门=0.00  刹车=0.02
+  t=  0.0s  雷达= 21.18m  真值= 24.98m  v_rel=+0.00 m/s  自车=16.30 m/s  前车=15.99 m/s  油门=0.53  刹车=0.00
   ...
-[结果] 平均车距误差 4.87 m | 最小车距 13.26 m | 最小 TTC 6.78 s | 平均车速 7.21 m/s
+[结果] 平均车距误差 2.97 m | 最小车距 11.66 m | 最小 TTC 5.50 s | 平均车速 7.30 m/s
 ```
 
 ### 5.3 采集训练数据
@@ -400,18 +400,24 @@ ls -lh data/
 python3 main.py --mode train
 ```
 
-**预期输出**：
+**预期输出**（完整逐 epoch 日志见
+[training_log.csv](../evidence/carla_nn_car_following/training_log.csv)）：
 
 ```
-[数据] 载入 4 个文件：dataset_constant.npz, dataset_cutin.npz, ...
-[数据] 样本总数 2400（训练 1920 / 验证 480）
+[数据] 载入 4 个文件：dataset_constant.npz, dataset_cutin.npz, dataset_decelerate.npz, dataset_emergency.npz
+[数据质量] 按帧剔除异常样本：250 / 2400（10.4%），保留 4 个工况
+[数据] 样本总数 2150（训练 1720 / 验证 430）
 [感知网络] 6-24-16-2，参数量 602
-  验证集：车距 RMSE = 0.xxx m，相对速度 RMSE = 0.xxx m/s
+  验证集：车距 RMSE = 0.415 m，相对速度 RMSE = 0.359 m/s
 [控制网络] 3-24-16-2
-  验证集：油门 RMSE = 0.xxxx，刹车 RMSE = 0.xxxx，总 MSE = 0.xxxxxx
+  验证集：油门 RMSE = 0.0155，刹车 RMSE = 0.0014，总 MSE = 0.000121
 [日志] 训练曲线数据已写入 data/training_log.csv
 [完成] 模型已保存到 models/（perception.npz、control.npz）
 ```
+
+> 本仓库**已随附训练好的** `models/perception.npz`、`models/control.npz`（体积很小，可直接入库），
+> 因此可以**直接**跳到 5.5 节运行神经网络控制器；如需自行复现训练，按 5.3 / 5.4 节重跑即可
+> （采集用的四个 `data/dataset_*.npz` 未入库，其中 `dataset_decelerate.npz` 作为样例随附）。
 
 ### 5.5 神经网络在线跟车
 
@@ -419,12 +425,14 @@ python3 main.py --mode train
 python3 main.py --mode run --host 192.168.148.1 --scenario decelerate --controller nn
 ```
 
-**预期输出**（多出一列"估计"，是感知网络对车距的估计值）：
+**预期输出**（多出一列"估计"，是感知网络对车距的估计值；完整日志见
+[run_nn.log](../evidence/carla_nn_car_following/run_nn.log)）：
 
 ```
 [控制器] 神经网络（感知网络估计车距 → 控制网络输出油门/刹车）
-  t=  0.0s  雷达= 15.22m  真值= 24.92m  ...  油门=0.00  刹车=0.02  估计= 24.81m(误差-0.11)
-[结果] 平均车距误差 x.xx m | 最小车距 xx.xx m | 最小 TTC x.xx s | 平均车速 x.xx m/s
+  t=  0.0s  雷达= 21.16m  真值= 24.98m  ...  油门=0.00  刹车=0.14  估计= 24.85m(误差-0.13)
+  ...
+[结果] 平均车距误差 4.06 m | 最小车距 13.31 m | 最小 TTC 3.34 s | 平均车速 7.23 m/s
 ```
 
 ### 5.6 用 ROS 2 launch 启动
@@ -572,6 +580,29 @@ cat data/eval_classic.csv
 | [run_nn.log](../evidence/carla_nn_car_following/run_nn.log) | 神经网络控制器在同一工况的逐帧输出（含 `估计=` 与 `误差`）与 `[结果]` 行 |
 
 复现第 ④ 类实验的命令见 5.2~5.5 节，每一步的预期输出与截图见第 4、5 章。
+
+**独立核验示例（不需要 CARLA、不需要训练）**：仓库已随附训练好的 `models/` 与一份真实采集样例
+`data/dataset_decelerate.npz`，可直接复算感知网络在真实数据上的精度：
+
+```bash
+cd src/ground/carla_nn_car_following
+python3 -c "
+import numpy as np, sys; sys.path.insert(0, '.')
+from carla_nn_car_following.nn_controller import NNController
+nn = NNController.load('models')
+d = np.load('data/dataset_decelerate.npz')
+errs = []
+for i in range(0, len(d['gap_true']), 20):
+    f = {'d_radar': float(d['radar_d'][i]), 'azimuth': float(d['radar_azimuth'][i]),
+         'closing_rate': float(d['radar_closing'][i]), 'mean_depth': float(d['radar_mean_depth'][i]),
+         'n_points': float(d['radar_n_points'][i])}
+    errs.append(nn.estimate(f, float(d['v_ego'][i]))[0] - float(d['gap_true'][i]))
+errs = np.array(errs)
+print('车距 RMSE = %.3f m, 最大 %.3f m' % (np.sqrt((errs**2).mean()), abs(errs).max()))
+"
+```
+
+预期输出：`车距 RMSE = 0.428 m, 最大 0.930 m`（与训练报告的验证集 0.415 m 一致）。
 
 ---
 

@@ -494,9 +494,20 @@ cat data/eval_classic.csv
 | 经典 ACC（基线） | 2.97 | 11.66 | 5.50 | 7.30 |
 | 感知 + 控制神经网络 | 4.06 | 13.31 | 3.34 | 7.23 |
 
-> 神经网络控制器的**感知估计误差**：车距平均误差约 0.9 m，最大 3.1 m（采样统计）。
-> 车距误差略大（4.06 m vs 2.97 m），原因是级联结构下感知误差会传递到控制环节；
-> 但**安全性指标反而更保守**（最小车距 13.31 m），说明网络学到了"偏保守"的跟车策略。
+> **两个安全性指标必须分开看，不能由单一指标推断整体安全性**：
+>
+> | 安全性指标 | 经典 ACC | 神经网络 | 含义 |
+> |---|---|---|---|
+> | 最小车距 | 11.66 m | **13.31 m** | 网络在"最近靠到多近"上更宽裕 |
+> | 最小 TTC | **5.50 s** | 3.34 s | 网络在"接近的相对速度"上更激进 |
+>
+> 最小车距只反映"靠得多近"；TTC $= d/(-v_{rel})$ 还包含**接近速度**，是更接近碰撞风险的度量。
+> 本模块的结论是：神经网络控制器的**车距误差略大**（4.06 m vs 2.97 m，源自级联结构中感知误差的传递），
+> 且**跟车风格与基线不同**（更早留出距离余量，但接近时的相对速度更大）。
+> 因此**不能**用"最小车距更大"断言网络整体更安全；若要提升安全性，应把 TTC 约束显式加入控制目标
+> （例如加入安全监督层）。
+>
+> 另：神经网络控制器的**感知估计误差**为车距平均误差约 0.9 m、最大 3.1 m（采样统计）。
 
 ### 6.3 神经网络离线精度与数据质量（验证集）
 
@@ -529,6 +540,32 @@ cat data/eval_classic.csv
 ![训练曲线](../img/ground/carla_nn_car_following/10_training_curve.png)
 ![经典 ACC 跟车](../img/ground/carla_nn_car_following/11_following_decelerate.gif)
 ![神经网络跟车](../img/ground/carla_nn_car_following/00_overview.gif)
+
+### 6.5 测试类型与可核验证据
+
+本模块的测试分四类，**结论的可信度不同，请勿混为一谈**：
+
+| # | 测试类型 | 命令 | 需要 CARLA | 验证什么 | 结果 |
+|---|---|---|---|---|---|
+| ① | 经典 ACC 逻辑（纯数学） | `python3 test/test_reference_acc.py` | 否 | 期望车距、加速度命令、油门/刹车标签、TTC 公式 | 24 项通过 |
+| ② | NumPy 神经网络实现（**合成数据**） | `python3 test/test_nn_numpy.py` | 否 | 前向/反向传播与 Adam 的数值正确性 | 17 项通过 |
+| ③ | 数据质量体检 | `python3 analyze_dataset.py` | 否（读已采集的 npz） | 雷达回波与真值的一致性 | 见下方证据文件 |
+| ④ | **真实 CARLA 闭环实验** | `--mode collect` / `train` / `run` | **是** | 6.1~6.3 节的**全部性能指标** | 见下方证据文件 |
+
+> ⚠️ **第 ② 类用的是合成数据**（`make_synthetic_dataset()` 生成"车距 − 2.3 m + 噪声"），
+> 它只用来证明**实现正确**（梯度、优化器没写错），**不代表真实精度**。
+> **6.1~6.3 节的所有指标都来自第 ④ 类真实 CARLA 闭环实验**，与 ② 无关。
+
+第 ④ 类实验的原始日志/结果文件放在 `docs/evidence/carla_nn_car_following/`，可直接下载核验：
+
+| 文件 | 内容 |
+|---|---|
+| [analyze_dataset.txt](../evidence/carla_nn_car_following/analyze_dataset.txt) | `analyze_dataset.py` 完整输出（各工况雷达—真值偏差均值/标准差/相关系数） |
+| [training_log.csv](../evidence/carla_nn_car_following/training_log.csv) | 训练过程逐 epoch 损失（`main.py --mode train` 生成） |
+| [run_classic.log](../evidence/carla_nn_car_following/run_classic.log) | 经典 ACC 在缓慢减速工况的逐帧输出与结尾 `[结果]` 行 |
+| [run_nn.log](../evidence/carla_nn_car_following/run_nn.log) | 神经网络控制器在同一工况的逐帧输出（含 `估计=` 与 `误差`）与 `[结果]` 行 |
+
+复现第 ④ 类实验的命令见 5.2~5.5 节，每一步的预期输出与截图见第 4、5 章。
 
 ---
 

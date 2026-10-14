@@ -110,7 +110,18 @@ class AccSceneNode(Node):
         self.min_gap = float('inf')
         self.min_ttc = float('inf')
 
-        self._setup()   # 连接失败时抛出异常，让 ros2 launch 直接报错退出
+        try:
+            self._setup()   # 连接失败时抛出异常，让 ros2 launch 直接报错退出
+        except Exception:
+            # _setup() 内部可能已经生成车辆、挂载传感器并把世界切到同步模式，
+            # 此时必须清理，否则 CARLA 会一直卡在同步模式（窗口冻结），
+            # 且已生成的对象会残留在世界里。
+            # 注意：__init__ 抛出异常时外部拿不到 node 对象，无法调用 destroy_node()，
+            # 所以清理只能在这里做。
+            self._cleanup_session()
+            self.get_logger().warn(
+                '初始化失败：已销毁已生成对象并恢复原始世界设置，避免 CARLA 停留在同步模式')
+            raise
         self.timer = self.create_timer(self.dt, self.on_timer)
         self.get_logger().info(
             '已就绪：地图 %s，工况 %s，时长 %.0f s，步长 %.3f s'
@@ -290,10 +301,18 @@ class AccSceneNode(Node):
             self.session.tick()
 
     # ---------------- 退出 ----------------
-    def destroy_node(self):
-        if self.session is not None:
-            self.session.close()
+    def _cleanup_session(self):
+        """销毁已生成的对象并恢复原始世界设置（避免 CARLA 停留在同步模式）。"""
+        session = getattr(self, 'session', None)
+        if session is not None:
+            try:
+                session.close()
+            except Exception as exc:                      # 清理失败不能掩盖原始异常
+                self.get_logger().warn('清理 CARLA 会话时出错：%s' % exc)
             self.session = None
+
+    def destroy_node(self):
+        self._cleanup_session()
         super().destroy_node()
 
 

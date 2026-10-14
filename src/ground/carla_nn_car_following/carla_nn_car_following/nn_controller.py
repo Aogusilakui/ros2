@@ -19,6 +19,30 @@ import numpy as np
 from .nn_numpy import MLP, Normalizer
 
 
+def candidate_models_dirs(models_dir):
+    """把 ``models_dir`` 展开成一组候选目录（按优先级排序）。
+
+    为什么需要它：``ros2 launch`` 的工作目录是**启动它的那个目录**，而不是功能包目录，
+    所以把 ``models_dir`` 默认写成相对路径 ``models`` 时，从别处启动就会找不到模型。
+    这里做一个最小可预测的搜索：当前工作目录 → 本功能包源码目录 → ``CARLA_NN_MODELS_DIR``。
+
+    ``__file__`` 用 ``realpath`` 解析，这样即使 ``colcon build --symlink-install``
+    把文件软链到 ``install/`` 下，也能回溯到**源码目录**。
+    """
+    expanded = os.path.expanduser(os.path.expandvars(models_dir))
+    if os.path.isabs(expanded):
+        return [expanded]
+
+    candidates = [os.path.abspath(expanded)]
+    # 本文件位于 <包根>/carla_nn_car_following/nn_controller.py
+    package_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    candidates.append(os.path.join(package_root, expanded))
+    env_dir = os.environ.get('CARLA_NN_MODELS_DIR')
+    if env_dir:
+        candidates.append(os.path.join(os.path.expanduser(env_dir), expanded))
+    return candidates
+
+
 class NNController:
     """感知网络 + 控制网络 的级联控制器。"""
 
@@ -50,15 +74,36 @@ class NNController:
     # ---------------- 载入 ----------------
     @classmethod
     def load(cls, models_dir):
-        perception_path = os.path.join(models_dir, 'perception.npz')
-        control_path = os.path.join(models_dir, 'control.npz')
-        for path in (perception_path, control_path):
-            if not os.path.isfile(path):
-                raise FileNotFoundError(
-                    '未找到模型文件 %s，请先运行：python3 main.py --mode collect 再 --mode train' % path)
-        perception, perception_meta = MLP.load(perception_path)
-        control, control_meta = MLP.load(control_path)
-        return cls(perception, perception_meta, control, control_meta)
+        """载入两个网络的权重。
+
+        ``models_dir`` 支持三种写法（见 :func:`candidate_models_dirs`）：
+
+        1. **绝对路径** —— 最稳妥，推荐在 `ros2 launch` 时传入；
+        2. 相对路径 —— 依次在「当前工作目录」「本功能包源码目录」「``CARLA_NN_MODELS_DIR`` 环境变量」
+           下查找，因此从任意目录启动都能找到（``ros2 launch`` 的工作目录是启动它的那个目录）；
+        3. ``~`` 与环境变量会被展开。
+
+        全部找不到时抛出 :class:`FileNotFoundError`，并把**尝试过的目录逐个列出**，
+        便于使用者定位问题（也便于评审独立核验）。
+        """
+        tried = []
+        for directory in candidate_models_dirs(models_dir):
+            tried.append(directory)
+            perception_path = os.path.join(directory, 'perception.npz')
+            control_path = os.path.join(directory, 'control.npz')
+            if os.path.isfile(perception_path) and os.path.isfile(control_path):
+                print('[模型] 已从 %s 载入神经网络权重' % directory)
+                perception, perception_meta = MLP.load(perception_path)
+                control, control_meta = MLP.load(control_path)
+                return cls(perception, perception_meta, control, control_meta)
+
+        raise FileNotFoundError(
+            '未找到模型文件 perception.npz / control.npz，已尝试以下目录：\n  - %s\n'
+            '请先训练模型（python3 main.py --mode collect 然后 --mode train），'
+            '或把 models_dir 参数写成**绝对路径**，例如：\n'
+            '  ros2 launch carla_nn_car_following main.launch.py controller:=nn '
+            'models_dir:=$HOME/ros2_ws/src/carla_nn_car_following/models'
+            % '\n  - '.join(tried))
 
     # ---------------- 感知 ----------------
     def estimate(self, features, v_ego):

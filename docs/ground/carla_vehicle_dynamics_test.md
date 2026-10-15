@@ -22,10 +22,11 @@
 | Python 依赖 | `carla==0.9.16`、`numpy`；`matplotlib` 可选（只用于画曲线图） |
 | 硬件 | 能跑起 CARLA 服务端的独立显卡（本模块的测量不依赖渲染帧率） |
 
-安装客户端（Ubuntu 22.04 + Python 3.10 对应 cp310 的 wheel）：
+安装客户端（Ubuntu 22.04 + Python 3.10 对应 cp310 的 wheel，依赖清单见功能包内的 `requirements.txt`）：
 
 ```bash
-python3 -m pip install --user carla==0.9.16 -i https://pypi.tuna.tsinghua.edu.cn/simple
+cd src/ground/carla_vehicle_dynamics_test
+python3 -m pip install --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ## 2. 目录结构
@@ -44,6 +45,7 @@ src/ground/carla_vehicle_dynamics_test/
 │   ├── test_metrics.py         指标函数单元测试（30 项，不需要 CARLA）
 │   └── test_physics_parse.py   车辆物理参数解析测试（18 项，假对象，不需要 CARLA）
 ├── launch/main.launch.py       ROS 2 启动入口
+├── requirements.txt            依赖清单（carla==0.9.16、numpy，matplotlib 可选）
 ├── package.xml / setup.py / setup.cfg
 └── README.md
 ```

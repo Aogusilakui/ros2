@@ -25,8 +25,9 @@
 # ① Windows 上双击启动 CARLA 服务端，用 ipconfig 记下宿主机 IP
 #    ！下面命令里的 192.168.148.1 要换成你自己查到的地址（通常也是 192.168.x.1）
 
-# ② 虚拟机中安装 CARLA 客户端
-python3 -m pip install --user carla==0.9.16 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# ② 虚拟机中安装依赖（carla 客户端 + numpy，matplotlib 可选）
+cd src/ground/carla_vehicle_dynamics_test
+python3 -m pip install --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # ③ 离线单元测试（不需要 CARLA，先跑这个最省时间）
 cd src/ground/carla_vehicle_dynamics_test

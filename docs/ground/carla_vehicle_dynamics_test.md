@@ -238,13 +238,8 @@ ros2 topic echo /dynamics/result --once
 ## 6. 结果与性能
 
 以下数据来自一次完整运行（CARLA 0.9.16，Town03，出生点 #0，步长 0.05 s，
-目标车速 60 km/h）。原始文件可以直接下载核对：
-
-* 终端完整输出：[run_all.log](../evidence/carla_vehicle_dynamics_test/run_all.log)
-* 同批次导出的汇总表：[dynamics_results.csv](../evidence/carla_vehicle_dynamics_test/dynamics_results.csv)
-
-> 重复运行的结果波动在 1% 以内（另一次运行的制动距离为 18.88 / 17.63 / 16.76 m），
-> 表中数值取自 `dynamics_results.csv`，与上方终端输出截图对应。
+目标车速 60 km/h），与上方终端输出截图对应。重复运行的结果波动在 1% 以内
+（另一次运行的制动距离为 18.88 / 17.63 / 16.76 m）。
 
 | 车型 | 轴距 | 0→60 km/h | 平均加速度 | 制动距离 | 平均减速度 | 转弯半径（实测） | 阿克曼理论 | 偏差 |
 |---|---|---|---|---|---|---|---|---|

@@ -17,7 +17,7 @@
 
 | 项目 | 版本 / 说明 |
 |---|---|
-| 宿主机 | Windows 10/11，CARLA 0.9.16（Windows 发行版解压即用，双击其中的 `CarlaUE4.exe`） |
+| 宿主机 | Windows 11，CARLA 0.9.16（Windows 发行版解压即用，双击其中的 `CarlaUE4.exe`） |
 | 虚拟机 | Ubuntu 22.04 LTS（VMware），ROS 2 Humble，Python 3.10.12 |
 | Python 依赖 | `carla==0.9.16`、`numpy`；`matplotlib` 可选（只用于画曲线图） |
 | 硬件 | 能跑起 CARLA 服务端的独立显卡（本模块的测量不依赖渲染帧率） |

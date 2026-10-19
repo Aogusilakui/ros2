@@ -117,11 +117,20 @@ ipconfig
 
 ### 4.3 虚拟机连通性检查
 
+Ubuntu 22.04 默认没有 `nc`，先装一次：
+
 ```bash
+sudo apt install -y netcat
 nc -vz 192.168.148.1 2000
 ```
 
-出现 `succeeded!` 说明能访问 CARLA 的 RPC 端口。
+出现 `succeeded!` 说明能访问 CARLA 的 RPC 端口。若不想装包，也可以用 Python 直接试连：
+
+```bash
+python3 -c "import socket;s=socket.socket();s.settimeout(3);print(s.connect_ex(('192.168.148.1',2000)))"
+```
+
+输出 `0` 表示端口可达。
 
 ### 4.4 编译功能包
 

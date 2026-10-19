@@ -116,6 +116,21 @@ def run_demo(session, args, on_state=None):
     return records
 
 
+def _positive_float(text):
+    """argparse 的类型校验：必须为正数。
+
+    没有这道校验时，``--phase-seconds`` 传 0 或负数会直接跳过整个循环——
+    程序不报错、也没有任何输出，看起来像卡死。
+    """
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError('必须是数值，收到 %s' % text)
+    if value <= 0.0:
+        raise argparse.ArgumentTypeError('必须大于 0，收到 %s' % text)
+    return value
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description='CARLA 地面载具灯光自动控制（演示）')
     parser.add_argument('--host', default=DEFAULT_HOST, help='Windows 宿主机 IP')
@@ -124,8 +139,8 @@ def build_parser():
     parser.add_argument('--dt', type=float, default=DEFAULT_DT)
     parser.add_argument('--vehicle', default='vehicle.tesla.model3')
     parser.add_argument('--spawn-index', type=int, default=-1)
-    parser.add_argument('--phase-seconds', type=float, default=PHASE_SECONDS,
-                        help='每个天气阶段的时长（秒）')
+    parser.add_argument('--phase-seconds', type=_positive_float, default=PHASE_SECONDS,
+                        help='每个天气阶段的时长（秒，必须大于 0）')
     parser.add_argument('--fast', action='store_true',
                         help='关闭实时节奏（默认按仿真时间 1:1 播放，方便观察灯光）')
     parser.add_argument('--no-follow', action='store_true',

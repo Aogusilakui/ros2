@@ -107,6 +107,41 @@ def main():
     check('--fast / --no-follow：两项都关', (not fast.realtime) and (not fast.follow))
     check('折算后仍保留原有参数', fast.vehicle == 'vehicle.tesla.model3' and fast.phase_seconds > 0)
 
+    print('\n[9] 边界值（阈值本身即触发，全部含边界）')
+    check('太阳正好 5°：开近光灯', decide_lights(5.0, 0.0, 0.0, 0.0)['low_beam'])
+    check('太阳 5.1°：不开近光灯', not decide_lights(5.1, 0.0, 0.0, 0.0)['low_beam'])
+    check('降水正好 30：开雾灯', decide_lights(60.0, 30.0, 0.0, 0.0)['fog'])
+    check('降水 29.9：不开雾灯', not decide_lights(60.0, 29.9, 0.0, 0.0)['fog'])
+    check('方向盘正好 0.15：右转向灯', decide_lights(60.0, 0.0, 0.15, 0.0)['right_blinker'])
+    check('方向盘 -0.15：左转向灯', decide_lights(60.0, 0.0, -0.15, 0.0)['left_blinker'])
+    check('刹车正好 0.05：刹车灯', decide_lights(60.0, 0.0, 0.0, 0.05)['brake_light'])
+    check('刹车 0.049：不亮', not decide_lights(60.0, 0.0, 0.0, 0.049)['brake_light'])
+    sm2 = BlinkerStateMachine()
+    sm2.update(0.15)
+    check('状态机：方向盘 0.15 即点亮', sm2.active == 'right')
+
+    print('\n[10] 输入健壮性（非数值统一抛 ValueError）')
+    for bad in ('abc', None):
+        try:
+            decide_lights(bad, 0.0, 0.0, 0.0)
+        except ValueError:
+            check('decide_lights 对 %r 抛 ValueError' % (bad,), True)
+        except Exception as exc:                                    # noqa: BLE001
+            check('decide_lights 对 %r 抛 ValueError' % (bad,), False, '抛了 %r' % exc)
+        else:
+            check('decide_lights 对 %r 抛 ValueError' % (bad,), False, '没有抛异常')
+    check('数字字符串可以正常使用', decide_lights('60', '0', '0', '0')['low_beam'] is False)
+
+    print('\n[11] 命令行参数校验')
+    try:
+        build_parser().parse_args(['--phase-seconds', '-1'])
+    except SystemExit:
+        check('--phase-seconds 为负时 argparse 报错退出', True)
+    else:
+        check('--phase-seconds 为负时 argparse 报错退出', False, '没有报错')
+    check('正常值可通过',
+          build_parser().parse_args(['--phase-seconds', '4']).phase_seconds == 4.0)
+
     print('\n' + '=' * 72)
     print('[结果] %d 项全部通过' % len(PASSED) if not FAILED
           else '[结果] 通过 %d 项，失败 %d 项：%s' % (len(PASSED), len(FAILED), FAILED))

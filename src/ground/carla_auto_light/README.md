@@ -31,7 +31,7 @@ cd src/ground/carla_auto_light
 python3 -m pip install --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # ③ 离线单元测试（不需要 CARLA，先跑这个最省时间）
-python3 test/test_light_logic.py      # 预期：[结果] 29 项全部通过
+python3 test/test_light_logic.py      # 预期：[结果] 43 项全部通过
 
 # ④ 演示
 python3 main.py --host 192.168.148.1
@@ -63,7 +63,7 @@ carla_auto_light/
 ├── carla_utils.py            CARLA 连接、同步、天气切换、灯光位掩码
 ├── light_node.py             ROS 2 节点：发布 /vehicle/lights
 └── app.py                    命令行入口与四阶段演示流程
-test/test_light_logic.py      纯逻辑单元测试（29 项，不需要 CARLA）
+test/test_light_logic.py      纯逻辑单元测试（43 项，不需要 CARLA）
 launch/main.launch.py         ROS 2 启动入口
 ```
 

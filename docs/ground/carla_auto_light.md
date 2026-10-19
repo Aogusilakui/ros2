@@ -30,7 +30,7 @@ src/ground/carla_auto_light/
 │   ├── carla_utils.py          CARLA 连接、同步步进、天气切换、灯光位掩码、跟随镜头
 │   ├── app.py                  命令行入口与四阶段演示流程
 │   └── light_node.py           ROS 2 节点：演示并发布 /vehicle/lights
-├── test/test_light_logic.py    纯逻辑单元测试（29 项，不需要 CARLA）
+├── test/test_light_logic.py    纯逻辑单元测试（43 项，不需要 CARLA）
 ├── launch/main.launch.py       ROS 2 启动入口
 ├── requirements.txt / package.xml / setup.py / setup.cfg
 └── README.md
@@ -49,34 +49,34 @@ CARLA 的 `carla.WeatherParameters` 直接给出太阳高度角（度），它�
 
 | 参数 | 取值 | 含义 |
 |---|---|---|
-| `SUN_HEADLIGHT_ON` | 5° | 太阳低于 5° 判为黄昏/黎明，开近光灯 |
-| `SUN_NIGHT` | -5° | 低于 -5° 判为夜间（仅用于日志分级） |
-| `PRECIPITATION_FOG` | 30 | 降水强度达到 30 时同时开雾灯 |
-| `STEER_BLINKER_ON` | 0.15 | 方向盘绝对值超过 0.15 打转向灯 |
-| `STEER_BLINKER_OFF` | 0.05 | 方向盘回到 0.05 以内转向灯自动熄灭 |
-| `BRAKE_LIGHT_ON` | 0.05 | 刹车量超过 0.05 点亮刹车灯 |
+| `SUN_HEADLIGHT_ON` | 5° | 太阳高度角 ≤ 5° 判为黄昏/黎明，开近光灯 |
+| `SUN_NIGHT` | -5° | ≤ -5° 判为夜间（仅用于日志分级） |
+| `PRECIPITATION_FOG` | 30 | 降水强度 ≥ 30 时同时开雾灯 |
+| `STEER_BLINKER_ON` | 0.15 | 方向盘绝对值 ≥ 0.15 打转向灯 |
+| `STEER_BLINKER_OFF` | 0.05 | 方向盘回到 0.05 以内（含）转向灯自动熄灭 |
+| `BRAKE_LIGHT_ON` | 0.05 | 刹车量 ≥ 0.05 点亮刹车灯 |
 
 即"该不该开灯"由下式决定（\(a\) 为太阳高度角，\(p\) 为降水强度）：
 
 $$
-\text{近光灯} = (a < 5^\circ) \lor (p \ge 30), \qquad
+\text{近光灯} = (a \le 5^\circ) \lor (p \ge 30), \qquad
 \text{雾灯} = (p \ge 30)
 $$
 
 ### 3.2 转向灯状态机（回正自动熄灭）
 
 真实汽车的方向盘下方有回位机构：打了转向灯之后，必须**把方向盘打够角度再回到中位**，
-转向灯才会自动熄灭；只把方向盘轻轻动一下不会触发。这里用两个阈值复现：
+转向灯才会自动熄灭；只把方向盘轻轻动一下不会触发。这里用两个阈值复现（阈值本身即触发，全部含边界）。转向灯只看**驾驶员指令**，车道保持算出的微调量不参与判断——否则车在弯道上会一直闪。
 
 ```mermaid
 stateDiagram-v2
     [*] --> 熄灭
-    熄灭 --> 左灯: steer < -0.15
-    熄灭 --> 右灯: steer > 0.15
+    熄灭 --> 左灯: steer ≤ -0.15
+    熄灭 --> 右灯: steer ≥ 0.15
     左灯 --> 熄灭: |steer| ≤ 0.05
     右灯 --> 熄灭: |steer| ≤ 0.05
-    左灯 --> 右灯: steer > 0.15
-    右灯 --> 左灯: steer < -0.15
+    左灯 --> 右灯: steer ≥ 0.15
+    右灯 --> 左灯: steer ≤ -0.15
 ```
 
 行为细节：
@@ -145,7 +145,7 @@ cd ~/ros2_ws/src/carla_auto_light
 python3 test/test_light_logic.py
 ```
 
-**预期输出**：`[结果] 29 项全部通过`。这 29 项覆盖了阈值边界、四类灯的触发条件、
+**预期输出**：`[结果] 43 项全部通过`。这 43 项覆盖了阈值边界、四类灯的触发条件、
 状态机的锁存/回正熄灭/左右互斥，以及日志名称转换。**先跑它再连 CARLA**，
 可以把"逻辑错"与"仿真器问题"分开。
 
@@ -262,7 +262,7 @@ ros2 topic echo /vehicle/lights
 | `compose_state(decision, blinker_state)` | 合成最终状态（状态机优先） |
 | `state_to_names(state)` | 转成中文名单，用于日志与话题 |
 
-之所以做成纯函数：**灯光决策不需要仿真器就能验证**。29 项单元测试里没有一行 CARLA 代码，
+之所以做成纯函数：**灯光决策不需要仿真器就能验证**。43 项单元测试里没有一行 CARLA 代码，
 涵盖阈值边界（太阳 5°、降水 30、方向盘 0.15 / 0.05、刹车 0.05）与状态机的全部转移。
 
 ### 7.2 `carla_utils.py`：连接与"干净的退出"

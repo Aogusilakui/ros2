@@ -15,7 +15,8 @@ from std_msgs.msg import String
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from carla_auto_light.app import (build_parser, finalize_args, run_demo)  # noqa: E402
+from carla_auto_light.app import (build_parser, finalize_args, parse_positive_float,
+                                  run_demo)                      # noqa: E402
 from carla_auto_light.carla_utils import LightSession, require_carla   # noqa: E402
 from carla_auto_light.light_logic import state_to_names          # noqa: E402
 
@@ -57,7 +58,8 @@ class AutoLightNode(Node):
         args.dt = float(self._string('dt'))
         args.vehicle = self._string('vehicle')
         args.spawn_index = int(float(self._string('spawn_index')))
-        args.phase_seconds = float(self._string('phase_seconds'))
+        # 与 main.py 共用同一个正数校验：否则 launch 传 0/负数时会静默跳过整段演示
+        args.phase_seconds = parse_positive_float(self._string('phase_seconds'))
 
         self.get_logger().info('灯光演示开始：%s，每个阶段 %.1f s'
                                % (args.vehicle, args.phase_seconds))

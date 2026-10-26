@@ -30,7 +30,7 @@ src/ground/carla_auto_light/
 │   ├── carla_utils.py          CARLA 连接、同步步进、天气切换、灯光位掩码、跟随镜头
 │   ├── app.py                  命令行入口与四阶段演示流程
 │   └── light_node.py           ROS 2 节点：演示并发布 /vehicle/lights
-├── test/test_light_logic.py    纯逻辑单元测试（43 项，不需要 CARLA）
+├── test/test_light_logic.py    纯逻辑单元测试（53 项，不需要 CARLA）
 ├── launch/main.launch.py       ROS 2 启动入口
 ├── requirements.txt / package.xml / setup.py / setup.cfg
 └── README.md
@@ -154,7 +154,7 @@ cd ~/ros2_ws/src/carla_auto_light
 python3 test/test_light_logic.py
 ```
 
-**预期输出**：`[结果] 43 项全部通过`。这 43 项覆盖了阈值边界、四类灯的触发条件、
+**预期输出**：`[结果] 53 项全部通过`。这 53 项覆盖了阈值边界、四类灯的触发条件、
 状态机的锁存/回正熄灭/左右互斥，以及日志名称转换。**先跑它再连 CARLA**，
 可以把"逻辑错"与"仿真器问题"分开。
 
@@ -271,7 +271,7 @@ ros2 topic echo /vehicle/lights
 | `compose_state(decision, blinker_state)` | 合成最终状态（状态机优先） |
 | `state_to_names(state)` | 转成中文名单，用于日志与话题 |
 
-之所以做成纯函数：**灯光决策不需要仿真器就能验证**。43 项单元测试里没有一行 CARLA 代码，
+之所以做成纯函数：**灯光决策不需要仿真器就能验证**。53 项单元测试里没有一行 CARLA 代码，
 涵盖阈值边界（太阳 5°、降水 30、方向盘 0.15 / 0.05、刹车 0.05）与状态机的全部转移。
 
 ### 7.2 `carla_utils.py`：连接与"干净的退出"

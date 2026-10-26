@@ -11,7 +11,9 @@ setup(
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml', 'main.py']),
+        # main.sh / main.bat 也要装进 share，否则打包后按 README 用脚本启动找不到入口
+        ('share/' + package_name,
+         ['package.xml', 'main.py', 'main.sh', 'main.bat', 'requirements.txt']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch*')),
     ],
     install_requires=['setuptools'],

@@ -116,19 +116,27 @@ def run_demo(session, args, on_state=None):
     return records
 
 
-def _positive_float(text):
-    """argparse 的类型校验：必须为正数。
+def parse_positive_float(text, name='phase_seconds'):
+    """共享的正数校验：``main.py`` 与 ROS 节点都用它，保证两条入口行为一致。
 
-    没有这道校验时，``--phase-seconds`` 传 0 或负数会直接跳过整个循环——
-    程序不报错、也没有任何输出，看起来像卡死。
+    没有这道校验时，阶段时长传 0 或负数会直接跳过整个循环——程序不报错、
+    也没有任何输出，看起来像卡死。
     """
     try:
         value = float(text)
-    except ValueError:
-        raise argparse.ArgumentTypeError('必须是数值，收到 %s' % text)
+    except (TypeError, ValueError):
+        raise ValueError('%s 必须是数值，收到 %r' % (name, text))
     if value <= 0.0:
-        raise argparse.ArgumentTypeError('必须大于 0，收到 %s' % text)
+        raise ValueError('%s 必须大于 0，收到 %r' % (name, text))
     return value
+
+
+def _positive_float(text):
+    """argparse 专用的包装：把 :func:`parse_positive_float` 的报错转成命令行提示。"""
+    try:
+        return parse_positive_float(text, '--phase-seconds')
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc))
 
 
 def build_parser():

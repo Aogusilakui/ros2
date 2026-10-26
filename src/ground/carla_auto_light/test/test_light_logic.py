@@ -142,6 +142,26 @@ def main():
     check('正常值可通过',
           build_parser().parse_args(['--phase-seconds', '4']).phase_seconds == 4.0)
 
+    print('\n[12] 两条入口共用同一个正数校验（main.py 与 ros2 launch）')
+    from carla_auto_light.app import parse_positive_float
+    check('"4" → 4.0', parse_positive_float('4') == 4.0)
+    for bad in ('0', '-1', 'abc', None):
+        try:
+            parse_positive_float(bad)
+        except ValueError as exc:
+            check('parse_positive_float(%r) 抛 ValueError' % (bad,), True, '（%s）' % exc)
+        else:
+            check('parse_positive_float(%r) 抛 ValueError' % (bad,), False, '没有抛异常')
+
+    print('\n[13] setup.py 打包时要把脚本入口一起装进 share')
+    import os as _os
+    setup_py = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                             'setup.py')
+    with open(setup_py, encoding='utf-8') as fp:
+        setup_src = fp.read()
+    for name in ('main.py', 'main.sh', 'main.bat', 'package.xml', 'requirements.txt'):
+        check('setup.py 的 data_files 含 %s' % name, "'%s'" % name in setup_src)
+
     print('\n' + '=' * 72)
     print('[结果] %d 项全部通过' % len(PASSED) if not FAILED
           else '[结果] 通过 %d 项，失败 %d 项：%s' % (len(PASSED), len(FAILED), FAILED))

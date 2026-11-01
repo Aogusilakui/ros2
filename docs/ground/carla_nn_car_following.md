@@ -376,7 +376,7 @@ python3 test/test_nn_numpy.py           # 预期：[结果] 17 项全部通过
 python3 main.py --mode scene --host 192.168.148.1 --scenario decelerate
 ```
 
-**预期输出**（完整逐帧日志见 [run_classic.log](../evidence/carla_nn_car_following/run_classic.log)）：
+**预期输出**（运行时会把逐帧数据全部打印出来）：
 
 ```
 [预检] 出生点 #0 可用（30 帧位移 5.3 m，末速 8.52 m/s），已重新就位
@@ -404,8 +404,7 @@ ls -lh data/
 python3 main.py --mode train
 ```
 
-**预期输出**（完整逐 epoch 日志见
-[training_log.csv](../evidence/carla_nn_car_following/training_log.csv)）：
+**预期输出**（训练时逐 epoch 打印损失）：
 
 ```
 [数据] 载入 4 个文件：dataset_constant.npz, dataset_cutin.npz, dataset_decelerate.npz, dataset_emergency.npz
@@ -429,8 +428,7 @@ python3 main.py --mode train
 python3 main.py --mode run --host 192.168.148.1 --scenario decelerate --controller nn
 ```
 
-**预期输出**（多出一列"估计"，是感知网络对车距的估计值；完整日志见
-[run_nn.log](../evidence/carla_nn_car_following/run_nn.log)）：
+**预期输出**（多出一列"估计"，是感知网络对车距的估计值）：
 
 ```
 [控制器] 神经网络（感知网络估计车距 → 控制网络输出油门/刹车）
@@ -574,16 +572,9 @@ cat data/eval_classic.csv
 > 它只用来证明**实现正确**（梯度、优化器没写错），**不代表真实精度**。
 > **6.1~6.3 节的所有指标都来自第 ④ 类真实 CARLA 闭环实验**，与 ② 无关。
 
-第 ④ 类实验的原始日志/结果文件放在 `docs/evidence/carla_nn_car_following/`，可直接下载核验：
-
-| 文件 | 内容 |
-|---|---|
-| [analyze_dataset.txt](../evidence/carla_nn_car_following/analyze_dataset.txt) | `analyze_dataset.py` 完整输出（各工况雷达—真值偏差均值/标准差/相关系数） |
-| [training_log.csv](../evidence/carla_nn_car_following/training_log.csv) | 训练过程逐 epoch 损失（`main.py --mode train` 生成） |
-| [run_classic.log](../evidence/carla_nn_car_following/run_classic.log) | 经典 ACC 在缓慢减速工况的逐帧输出与结尾 `[结果]` 行 |
-| [run_nn.log](../evidence/carla_nn_car_following/run_nn.log) | 神经网络控制器在同一工况的逐帧输出（含 `估计=` 与 `误差`）与 `[结果]` 行 |
-
-复现第 ④ 类实验的命令见 5.2~5.5 节，每一步的预期输出与截图见第 4、5 章。
+第 ④ 类实验的原始日志与结果文件**不随仓库提供**：按仓库约定，可由程序生成的文件不入库。
+需要核对时按 5.2~5.5 节的命令重跑一遍，终端会打印完整逐帧输出与结尾的 `[结果]` 行，
+每一步的预期输出与截图见第 4、5 章。
 
 **独立核验示例（不需要 CARLA、不需要训练）**：仓库已随附训练好的 `models/` 与一份真实采集样例
 `data/dataset_decelerate.npz`，可直接复算感知网络在真实数据上的精度：
